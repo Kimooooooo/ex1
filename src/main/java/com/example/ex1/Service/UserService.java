@@ -3,6 +3,7 @@ package com.example.ex1.Service;
 import com.example.ex1.Entity.City;
 import com.example.ex1.Entity.User;
 import com.example.ex1.Entity.UserCreateDto;
+import com.example.ex1.Entity.UserDto;
 import com.example.ex1.Repository.CityRepository;
 import com.example.ex1.Repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -30,16 +32,17 @@ public class UserService {
     }
 
 
-    public List<User> findAll(Pageable pageable){
+    public List<UserDto> findAll(Pageable pageable){
         List<User> users = userRepository.findAllByOrderByIdDesc(pageable).getContent();
-        log.info("Found {} users", users.size());
-        return users;
+        List<UserDto> usersDto = users.stream().map(UserDto::new).collect(Collectors.toList());
+        log.info("Found {} users", usersDto.size());
+        return usersDto;
     }
-    public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
-
+    public UserDto findById(Long id) {
+        User findUser = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("유저를 찾을수없습니다"));
+        return new UserDto(findUser);
     }
-    public User create(UserCreateDto dto){
+    public UserDto create(UserCreateDto dto){
         City city = cityRepository.findById(dto.getCityId()).orElseThrow(() -> new EntityNotFoundException("도시를 찾을수없습니다"));
         User user = User.builder()
                 .username(dto.getUsername())
@@ -48,28 +51,20 @@ public class UserService {
                 .createDate(LocalDateTime.now())
                 .city(city)
                 .build();
-        return userRepository.save(user);
+        User saveUser = userRepository.save(user);
+        return new UserDto(saveUser);
 
     }
-    public User update(Long id,User user){
-         Optional<User> find = userRepository.findById(id);
-         if(find.isPresent()){
-            User finder = find.get();
-            finder.updateMethod(user.getUsername(),user.getPassword(), user.getAge());
-            userRepository.save(finder);
-        }else{
-             throw new IllegalStateException("수정할 아이디가없습니다");
-         }
-          return user;
+    public UserDto update(Long id,UserDto dto){
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("수정할 아이디가 없습니다"));
+        user.updateMethod(dto.getUsername(),(dto.getPassword()), dto.getAge());
+       User updateUser =  userRepository.save(user);
+        return new UserDto(updateUser);
     }
     public void delete(Long id){
-        Optional<User> finder = userRepository.findById(id);
-        if(finder.isPresent()){
-             userRepository.delete(finder.get());
-        }else{
-            throw new IllegalStateException("삭제할 아이디가없습니다");
-        }
-
-
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("삭제할 아이디가 없습니다"));
+        userRepository.delete(user);
     }
 }
