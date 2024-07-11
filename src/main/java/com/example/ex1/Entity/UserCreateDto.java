@@ -15,9 +15,11 @@ import javax.validation.constraints.Size;
 public class UserCreateDto {
     @NotBlank(message = "이름은 필수입니다")
     private String username;
+
     @NotBlank(message = "비밀번호는 필수입니다")
     @Size(min = 8,message = "비밀번호는 최소8자입니다")
     private String password;
+
     @Min(value = 10,message = "10살 미만은 가입불가입니다")
     private int age;
     private Long cityId;
